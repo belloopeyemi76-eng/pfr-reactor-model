@@ -27,6 +27,14 @@ Three cases are supported:
    and cooling parameters, find the reactor volume required to reach a
    target conversion.
 
+## Numerical method
+
+The model is integrated with SciPy's adaptive RK45 solver. A classical
+fourth-order Runge-Kutta integrator is also written from scratch
+(`rk4_integrate`) and tested against the exact isothermal solution. Halving
+the step size cuts the error by about a factor of 16, which confirms fourth-order
+convergence (observed order about 4.0 to 4.1).
+
 ## Files
 
 - `pfr_reactor_model.py` - the model itself: ODE system, integrator,
@@ -34,7 +42,8 @@ Three cases are supported:
   and the volume-search routine for the main design problem.
 - `test_pfr_reactor_model.py` - validation tests. Checks the numerical
   solution against the analytical isothermal solution, checks the
-  adiabatic temperature rise against theory, and includes basic
+  adiabatic temperature rise against theory, confirms that the
+  hand-written RK4 solver converges at fourth order, and includes basic
   physical sanity checks (monotonic conversion, cooled vs. adiabatic
   comparison).
 

@@ -189,6 +189,28 @@ def adiabatic_temperature_rise(params: ReactorParams, X: float = 1.0) -> float:
     return (-params.dH_rxn) * params.F_A0 * X / params.FCp
 
 
+def rk4_integrate(params: ReactorParams, V_end: float, T0: float,
+                  n_steps: int, isothermal_T=None):
+    """
+    Fixed-step classical fourth-order Runge-Kutta integrator written
+    from scratch, used to check convergence order independently of
+    SciPy.
+
+    Returns the final state [X, T] at V = V_end.
+    """
+    h = V_end / n_steps
+    y = np.array([0.0, T0], dtype=float)
+    V = 0.0
+    for _ in range(n_steps):
+        k1 = np.array(pfr_odes(V, y, params, isothermal_T))
+        k2 = np.array(pfr_odes(V + h / 2, y + h / 2 * k1, params, isothermal_T))
+        k3 = np.array(pfr_odes(V + h / 2, y + h / 2 * k2, params, isothermal_T))
+        k4 = np.array(pfr_odes(V + h, y + h * k3, params, isothermal_T))
+        y = y + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        V += h
+    return y
+
+
 if __name__ == "__main__":
     # Example design case: exothermic reaction, jacket-cooled PFR.
     params = ReactorParams(

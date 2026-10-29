@@ -18,6 +18,8 @@ from pfr_reactor_model import (
     analytical_isothermal_conversion,
     find_volume_for_conversion,
     adiabatic_temperature_rise,
+    rk4_integrate,
+    rate_constant,
 )
 
 
@@ -112,10 +114,34 @@ def test_cooled_reactor_runs_cooler_than_adiabatic_at_same_volume():
     assert cooled_profile["T"][-1] < adiabatic_profile["T"][-1]
 
 
+
+def test_rk4_converges_at_fourth_order():
+    # The from-scratch RK4 solver should show fourth-order convergence
+    # against the exact isothermal solution: halving the step size
+    # should cut the error by roughly a factor of 2**4 = 16.
+    params = make_base_params()
+    T_fixed = 350.0
+    V_end = 10.0
+    exact = analytical_isothermal_conversion(V_end, params, T_fixed)
+
+    step_counts = [10, 20, 40, 80]
+    errors = [
+        abs(rk4_integrate(params, V_end, T_fixed, n, isothermal_T=T_fixed)[0] - exact)
+        for n in step_counts
+    ]
+
+    for coarse, fine in zip(errors[:-1], errors[1:]):
+        observed_order = np.log2(coarse / fine)
+        assert 3.8 < observed_order < 4.3, (
+            f"Expected fourth-order convergence, observed order {observed_order:.2f}"
+        )
+
+
 if __name__ == "__main__":
     test_isothermal_matches_analytical()
     test_adiabatic_temperature_rise_matches_theory()
     test_conversion_is_monotonic_increasing()
     test_volume_search_reaches_target_conversion()
     test_cooled_reactor_runs_cooler_than_adiabatic_at_same_volume()
+    test_rk4_converges_at_fourth_order()
     print("All tests passed.")
